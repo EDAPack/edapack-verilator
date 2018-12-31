@@ -1,0 +1,53 @@
+diff -rcNB verilator-4.008/src/V3Options.cpp verilator-4.008.float/src/V3Options.cpp
+*** verilator-4.008/src/V3Options.cpp	2018-11-28 16:43:58.000000000 -0800
+--- verilator-4.008.float/src/V3Options.cpp	2018-12-31 08:16:22.021496034 -0800
+***************
+*** 41,46 ****
+--- 41,47 ----
+  #include <map>
+  #include <memory>
+  #include <set>
++ #include <stdio.h>
+  
+  #include "config_rev.h"
+  
+***************
+*** 507,520 ****
+  }
+  
+  string V3Options::getenvVERILATOR_ROOT() {
+!     string var = V3Os::getenvStr("VERILATOR_ROOT","");
+!     if (var == "" && string(DEFENV_VERILATOR_ROOT) != "") {
+! 	var = DEFENV_VERILATOR_ROOT;
+! 	V3Os::setenvStr("VERILATOR_ROOT", var, "Hardcoded at build time");
+!     }
+!     if (var == "") {
+! 	v3fatal("$VERILATOR_ROOT needs to be in environment\n");
+      }
+      return var;
+  }
+  
+--- 508,530 ----
+  }
+  
+  string V3Options::getenvVERILATOR_ROOT() {
+!     // Locate the installation based on the executable location
+!     string exe = v3Global.opt.bin(); // Full path to the executable
+!     string var;
+! 
+!     int i=exe.size()-1;
+! 
+!     // We must back up two path elements to obtain VERILATOR_ROOT
+!     for (int path_elems=0; path_elems<2; path_elems++) {
+!       while (i>0 && exe.at(i) != '/') {
+!         i--;
+!       }
+!       if (i>0) {
+!         i--;
+!       }
+      }
++     var = exe.substr(0,i+1) + "/share/verilator";
++    
+      return var;
+  }
+  
