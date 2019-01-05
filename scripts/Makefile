@@ -31,6 +31,8 @@ VERILATOR_DIR=verilator-$(version)
 VERILATOR_TGZ=$(VERILATOR_DIR).tgz
 VERILATOR_URL=https://www.veripool.org/ftp/$(VERILATOR_TGZ)
 
+EDAPACK_VERILATOR_PREFIX=$(BUILD_DIR)/verilator/verilator
+
 all : edapack-verilator
 
 edapack-verilator : $(BUILD_DIR)/verilator-$(platform)-$(version).tar.gz
@@ -46,11 +48,13 @@ $(BUILD_DIR)/verilator.d : $(PACKAGES_DIR)/$(VERILATOR_TGZ)
 		patch -p1 < $(EDAPACK_VERILATOR_DIR)/scripts/verilator.patch
 	$(Q)cd $(BUILD_DIR)/verilator/$(VERILATOR_DIR) ; \
 		export CXXFLAGS="-O3"; \
-		./configure --prefix=$(BUILD_DIR)/verilator/verilator \
+		./configure --prefix=$(EDAPACK_VERILATOR_PREFIX) \
 			--enable-prec11 
 	$(Q)cd $(BUILD_DIR)/verilator/$(VERILATOR_DIR) ; \
 		$(MAKE) CXXFLAGS="-O3"
 	$(Q)cd $(BUILD_DIR)/verilator/$(VERILATOR_DIR) ; $(MAKE) install
+	$(Q)cp -r $(EDAPACK_VERILATOR_DIR)/smoketest $(EDAPACK_VERILATOR_PREFIX)
+	$(Q)chmod +x $(EDAPACK_VERILATOR_PREFIX)/smoketest/runit.sh
 	$(Q)touch $@
 
 $(PACKAGES_DIR)/$(VERILATOR_TGZ) :
