@@ -2,8 +2,10 @@ MKFILES_DIR=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 EDAPACK_VERILATOR_DIR=$(abspath $(MKFILES_DIR)/..)
 PACKAGES_DIR=$(EDAPACK_VERILATOR_DIR)/packages
 BUILD_DIR=$(EDAPACK_VERILATOR_DIR)/build
+GITHUB=https://github.com
+EDAPACK_BUILD_URL=https://github.com/EDAPack/edapack-build
 
-include $(EDAPACK_VERILATOR_DIR)/etc/edapack-verilator.info
+include $(EDAPACK_VERILATOR_DIR)/etc/package.info
 
 ifeq (true,$(VERBOSE))
 Q=
@@ -32,13 +34,15 @@ VERILATOR_TGZ=$(VERILATOR_DIR).tgz
 VERILATOR_URL=https://www.veripool.org/ftp/$(VERILATOR_TGZ)
 
 EDAPACK_VERILATOR_PREFIX=$(BUILD_DIR)/verilator/verilator
+PACKAGE=$(BUILD_DIR)/verilator-$(platform)-$(version).tar.gz
 
-all : edapack-verilator
+all : $(PACKAGE)
 
-edapack-verilator : $(BUILD_DIR)/verilator-$(platform)-$(version).tar.gz
-
-$(BUILD_DIR)/verilator-$(platform)-$(version).tar.gz : $(BUILD_DIR)/verilator.d
-	$(Q)cd $(BUILD_DIR)/verilator ; tar czf $@ verilator
+$(PACKAGE) : \
+		$(BUILD_DIR)/verilator.d \
+		$(EDAPACK_VERILATOR_PREFIX)/etc/package.info \
+		$(EDAPACK_VERILATOR_PREFIX)/etc/install.py
+	$(Q)cd $(EDAPACK_VERILATOR_PREFIX) ; tar czf $@ *
 
 $(BUILD_DIR)/verilator.d : $(PACKAGES_DIR)/$(VERILATOR_TGZ)
 	$(Q)rm -rf $(BUILD_DIR)/verilator
@@ -61,11 +65,32 @@ $(PACKAGES_DIR)/$(VERILATOR_TGZ) :
 	$(Q)if test ! -d $(PACKAGES_DIR); then mkdir -p $(PACKAGES_DIR); fi
 	$(Q)$(WGET) -O $@ $(VERILATOR_URL)
 
-release : edapack-verilator
-	$(Q)$(EDAPACK_VERILATOR_DIR)/scripts/upload.py \
-		--org EDAPack --repo edapack-verilator \
+$(EDAPACK_VERILATOR_PREFIX)/etc/package.info : \
+		$(EDAPACK_VERILATOR_DIR)/etc/package.info
+	$(Q)mkdir -p $(EDAPACK_VERILATOR_PREFIX)/etc
+	$(Q)cp $^ $@
+
+$(EDAPACK_VERILATOR_PREFIX)/etc/install.py : $(PACKAGES_DIR)/install.py
+	$(Q)mkdir -p $(EDAPACK_VERILATOR_PREFIX)/etc
+	$(Q)cp $^ $@
+
+release : $(PACKAGE) $(PACKAGES_DIR)/upload.py
+	$(Q)python3 $(PACKAGES_DIR)/upload.py \
+		--org EDAPack --repo verilator \
 		--key $(GITHUB_API_TOKEN) --version $(version) \
 		$(BUILD_DIR)/verilator-$(platform)-$(version).tar.gz
+
+$(PACKAGES_DIR)/install.py :
+	$(Q)mkdir -p $(PACKAGES_DIR)
+	$(Q)$(WGET) -O $@ \
+          $(EDAPACK_BUILD_URL)/raw/master/scripts/install.py || \
+		(rm -f $@ ; exit 1)
+
+$(PACKAGES_DIR)/upload.py :
+	$(Q)mkdir -p $(PACKAGES_DIR)
+	$(Q)$(WGET) -O $@ \
+          $(EDAPACK_BUILD_URL)/raw/master/scripts/upload.py || \
+		(rm -rf $@ ; exit 1)
 
 clean :
 	$(Q)rm -rf $(BUILD_DIR)

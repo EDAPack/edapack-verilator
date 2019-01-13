@@ -1,0 +1,9 @@
+#****************************************************************************
+#* package.info
+#*
+#* Package-info file for edapack-verilator
+#****************************************************************************
+version=4.008
+destdir=verilator
+update-url=https://github.com/EDAPack/edapack-verilator
+
